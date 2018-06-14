@@ -70,9 +70,11 @@ def command_decorator(commands):
 class PDFManager:
     commands = {}
     command = command_decorator(commands)
+    completions = []
 
     def __init__(self):
-        readline.parse_and_bind('')
+        readline.set_completer(self.complete)
+        readline.parse_and_bind("tab: complete")
         self.db = Database('list.db')
         self.result = None
 
@@ -81,6 +83,38 @@ class PDFManager:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.db.close()
+
+    def complete(self, text, state):
+        buf = readline.get_line_buffer()
+
+        if state == 0:
+            try:
+                tokens = shlex.split(buf)
+            except ValueError as e:
+                if e.args != ('No closing quotation',):
+                    raise e
+                try:
+                    tokens = shlex.split(buf + '"')
+                except ValueError as e:
+                    if e.args != ('No closing quotation',):
+                        raise e
+                    tokens = shlex.split(buf + "'")
+
+            self.completions = []
+            if (1 <= len(tokens) <= 2) and (tokens[0] == 'add'):
+                cur = ''
+                if len(tokens) == 2:
+                    cur = tokens[1]
+                elif not buf.endswith(' '):
+                    return
+
+                self.completions = [shlex.quote(i) for i in os.listdir()
+                                                   if i.startswith(cur)]
+
+        try:
+            return self.completions[state]
+        except IndexError:
+            return None
 
     @command('add')
     def add(self, *args):
