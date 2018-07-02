@@ -120,6 +120,7 @@ class PDFManager:
     def add(self, *args):
         if len(args) != 3:
             print("add <file> <title> <subject>")
+            return
         path, title, subject = args
 
         if not os.path.exists(path):
@@ -156,7 +157,14 @@ class PDFManager:
 
     def loop(self):
         while True:
-            line = shlex.split(input('> '))
+            try:
+                line = shlex.split(input('> '))
+            except ValueError as e:
+                print(e)
+                continue
+            except EOFError:
+                print()
+                break
 
             if len(line) == 0:
                 pass
