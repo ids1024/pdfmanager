@@ -117,12 +117,7 @@ class PDFManager:
             return None
 
     @command('add')
-    def add(self, *args):
-        if len(args) != 3:
-            print("add <file> <title> <subject>")
-            return
-        path, title, subject = args
-
+    def add(self, path, title, subject):
         if not os.path.exists(path):
             print(f"No such file: {path}")
         db.insert(path, title, subject, Status.unread)
@@ -134,11 +129,7 @@ class PDFManager:
             print(f"[{x}] {i}")
 
     @command('ls')
-    def list_pdfs(self, *args):
-        subject = None
-        if len(args) > 0:
-            subject = args[0]
-
+    def list_pdfs(self, subject=None):
         self.result = Result('pdfs', list(self.db.list(subject)))
         for x, i in enumerate(self.result.items):
             print(f"[{x}] {i.title}")
@@ -167,12 +158,30 @@ class PDFManager:
                 break
 
             if len(line) == 0:
-                pass
-            elif line[0] in self.commands:
-                self.commands[line[0]](self, *line[1:])
-            elif line[0].isnumeric():
-                self.select(int(line[0]))
-            elif line[0] in ('q', 'quit'):
+                continue
+
+            cmd = line[0]
+            if cmd in self.commands:
+                func = self.commands[cmd]
+                try:
+                    func(self, *line[1:])
+                except TypeError as e:
+                    if len(e.args) != 1 or \
+                       "positional argument" not in e.args[0]:
+                        raise e
+                    usage = cmd
+                    nargs = func.__code__.co_argcount
+                    ndefs = len(func.__defaults__) if func.__defaults__ else 0
+                    for x, i in enumerate(func.__code__.co_varnames[1:nargs]):
+                        if x >= nargs - ndefs - 1:
+                            usage += f" [<{i}>]"
+                        else:
+                            usage += f" <{i}>"
+                    print(f"Usage: {usage}")
+
+            elif cmd.isnumeric():
+                self.select(int(cmd))
+            elif cmd in ('q', 'quit'):
                 break
             else:
                 print(f"No such command: '{line[0]}'")
