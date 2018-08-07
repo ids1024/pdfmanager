@@ -154,6 +154,18 @@ class PDFManager:
             elif self.result.type == 'subjects':
                 self.list_pdfs(item)
 
+    def get_usage(self, cmd):
+        func = self.commands[cmd]
+        usage = cmd
+        nargs = func.__code__.co_argcount
+        ndefs = len(func.__defaults__) if func.__defaults__ else 0
+        for x, i in enumerate(func.__code__.co_varnames[1:nargs]):
+            if x >= nargs - ndefs - 1:
+                usage += f" [<{i}>]"
+            else:
+                usage += f" <{i}>"
+        return usage
+
     def loop(self):
         while True:
             try:
@@ -177,15 +189,7 @@ class PDFManager:
                     if len(e.args) != 1 or \
                        "positional argument" not in e.args[0]:
                         raise e
-                    usage = cmd
-                    nargs = func.__code__.co_argcount
-                    ndefs = len(func.__defaults__) if func.__defaults__ else 0
-                    for x, i in enumerate(func.__code__.co_varnames[1:nargs]):
-                        if x >= nargs - ndefs - 1:
-                            usage += f" [<{i}>]"
-                        else:
-                            usage += f" <{i}>"
-                    print(f"Usage: {usage}")
+                    print(f"Usage: {self.get_usage(cmd)}")
 
             elif cmd.isnumeric():
                 self.select(int(cmd))
