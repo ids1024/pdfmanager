@@ -89,7 +89,6 @@ class PDFManager:
     def get_completions(self, tokens):
         if len(tokens) == 1:
             return [i for i in self.commands if i.startswith(tokens[0])]
-            pass
         else:
             cmd = tokens[0]
             idx = len(tokens) - 1
