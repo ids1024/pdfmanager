@@ -14,7 +14,7 @@ class Status(Enum):
     unread = 0
     read = 1
 
-Entry = collections.namedtuple("Entry", "path title subject status")
+Entry = collections.namedtuple("Entry", "id path title subject status")
 Result = collections.namedtuple("Result", "type items")
 
 class Database:
@@ -92,9 +92,13 @@ class PDFManager:
             pass
         else:
             cmd = tokens[0]
+            idx = len(tokens) - 1
+            cur = tokens[-1]
 
-            if cmd == 'add' and len(tokens) == 2:
-                return [i for i in os.listdir() if i.startswith(tokens[1])]
+            if cmd == 'add' and idx == 1:
+                return [i for i in os.listdir() if i.startswith(cur)]
+            elif cmd == 'ls' and idx == 1:
+                return [i for i in self.db.subjects() if i.startswith(cur)]
 
         return []
 
@@ -187,6 +191,7 @@ class PDFManager:
                     func(self, *line[1:])
                 except TypeError as e:
                     if len(e.args) != 1 or \
+                       not e.args[0].startswith(f"{cmd}()") or \
                        "positional argument" not in e.args[0]:
                         raise e
                     print(f"Usage: {self.get_usage(cmd)}")
