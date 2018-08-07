@@ -73,12 +73,13 @@ class PDFManager:
     commands = {}
     command = command_decorator(commands)
     completions = []
+    result = None
+    subject = None
 
     def __init__(self):
         readline.set_completer(self.complete)
         readline.parse_and_bind("tab: complete")
         self.db = Database('list.db')
-        self.result = None
 
     def __enter__(self):
         return self
@@ -96,7 +97,7 @@ class PDFManager:
 
             if cmd == 'add' and idx == 1:
                 return [i for i in os.listdir() if i.startswith(cur)]
-            elif cmd == 'ls' and idx == 1:
+            elif (cmd == 'ls' or cmd == 'cd') and idx == 1:
                 return [i for i in self.db.subjects() if i.startswith(cur)]
 
         return []
@@ -128,10 +129,14 @@ class PDFManager:
             return None
 
     @command('add')
-    def add(self, path, title, subject):
+    def add(self, path, title, subject=None):
+        subject = subject or self.subject
         if not os.path.exists(path):
             print(f"No such file: {path}")
-        self.db.insert(path, title, subject, Status.unread)
+        elif subject is None:
+            print("'cd' to a subject, or specify subject as third argument")
+        else:
+            self.db.insert(path, title, subject, Status.unread)
 
     @command(['s', 'subjects'])
     def list_subjects(self):
@@ -141,9 +146,14 @@ class PDFManager:
 
     @command('ls')
     def list_pdfs(self, subject=None):
+        subject = subject or self.subject
         self.result = Result('pdfs', list(self.db.list(subject)))
         for x, i in enumerate(self.result.items):
             print(f"[{x}] {i.title}")
+            
+    @command('cd')
+    def cd(self, subject):
+        self.subject = subject or None
 
     def select(self, idx):
         if self.result is None:
@@ -172,7 +182,7 @@ class PDFManager:
     def loop(self):
         while True:
             try:
-                line = shlex.split(input('> '))
+                line = shlex.split(input(f"{self.subject or ''}> "))
             except ValueError as e:
                 print(e)
                 continue
