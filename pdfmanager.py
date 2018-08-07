@@ -31,7 +31,9 @@ class Database:
                               )''')
 
     def insert(self, path, title, subject, status):
-        self.conn.execute("INSERT INTO files VALUES (?, ?, ?, ?)",
+        self.conn.execute('''INSERT INTO files
+                             (path, title, subject, status)
+                             VALUES (?, ?, ?, ?)''',
                           (path, title, subject, status.value))
         self.conn.commit()
 
@@ -84,6 +86,18 @@ class PDFManager:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.db.close()
 
+    def get_completions(self, tokens):
+        if len(tokens) == 1:
+            return [i for i in self.commands if i.startswith(tokens[0])]
+            pass
+        else:
+            cmd = tokens[0]
+
+            if cmd == 'add' and len(tokens) == 2:
+                return [i for i in os.listdir() if i.startswith(tokens[1])]
+
+        return []
+
     def complete(self, text, state):
         buf = readline.get_line_buffer()
 
@@ -100,16 +114,10 @@ class PDFManager:
                         raise e
                     tokens = shlex.split(buf + "'")
 
-            self.completions = []
-            if (1 <= len(tokens) <= 2) and (tokens[0] == 'add'):
-                cur = ''
-                if len(tokens) == 2:
-                    cur = tokens[1]
-                elif not buf.endswith(' '):
-                    return
+            if buf.endswith(' ') or len(tokens) == 0:
+                tokens.append('')
 
-                self.completions = [shlex.quote(i) for i in os.listdir()
-                                                   if i.startswith(cur)]
+            self.completions = [shlex.quote(i) for i in self.get_completions(tokens)]
 
         try:
             return self.completions[state]
@@ -120,7 +128,7 @@ class PDFManager:
     def add(self, path, title, subject):
         if not os.path.exists(path):
             print(f"No such file: {path}")
-        db.insert(path, title, subject, Status.unread)
+        self.db.insert(path, title, subject, Status.unread)
 
     @command(['s', 'subjects'])
     def list_subjects(self):
