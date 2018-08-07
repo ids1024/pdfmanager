@@ -152,7 +152,7 @@ class PDFManager:
             print(f"[{x}] {i.title}")
             
     @command('cd')
-    def cd(self, subject):
+    def cd(self, subject=None):
         self.subject = subject or None
 
     def select(self, idx):
